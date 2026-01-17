@@ -340,4 +340,352 @@
       id="prompt" 
       placeholder="Décrivez votre présentation en français...
 
-Exemple : Créer une présentation prof
+Exemple : Créer une présentation professionnelle sur l'intelligence artificielle en comptabilité. Public : Experts-comptables. Inclure des statistiques récentes et des exemples concrets."
+    ></textarea>
+    
+    <!-- Zone d'upload des fichiers -->
+    <div id="uploadZone" class="upload-zone" onclick="document.getElementById('fileInput').click()">
+      <div class="upload-icon">📎</div>
+      <div class="upload-text">
+        <strong>Cliquez</strong> ou <strong>glissez-déposez</strong> vos documents
+      </div>
+      <div class="supported-formats">PDF, DOCX, XLSX, PPTX, TXT, Images (max 10MB/fichier)</div>
+      <div id="fileList" class="file-list"></div>
+    </div>
+    <input type="file" id="fileInput" class="file-input" multiple accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.png,.jpg,.jpeg,.gif,.webp">
+    
+    <div class="options">
+      <select id="slides">
+        <option value="8" selected>8 slides</option>
+        <option value="10">10 slides</option>
+        <option value="12">12 slides</option>
+        <option value="15">15 slides</option>
+        <option value="20">20 slides</option>
+      </select>
+      <select id="style">
+        <option value="professionnel" selected>Professionnel</option>
+        <option value="moderne">Moderne</option>
+        <option value="créatif">Créatif</option>
+        <option value="minimaliste">Minimaliste</option>
+        <option value="dynamique">Dynamique</option>
+      </select>
+    </div>
+    
+    <button id="generateBtn" onclick="generatePresentation()">
+      ✨ Générer Présentation
+    </button>
+    
+    <div class="quick-actions">
+      <button class="quick-btn" onclick="fillExample('comptable')">
+        💼 Ex. Comptable
+      </button>
+      <button class="quick-btn" onclick="fillExample('pitch')">
+        🚀 Ex. Pitch Deck
+      </button>
+      <button class="quick-btn" onclick="fillExample('formation')">
+        📚 Ex. Formation
+      </button>
+    </div>
+    
+    <div id="progressContainer" class="progress-container">
+      <div class="progress-bar">
+        <div id="progressFill" class="progress-fill"></div>
+      </div>
+      <div id="progressText" class="progress-text"></div>
+    </div>
+    
+    <div id="status" class="status"></div>
+    <div id="result" class="result"></div>
+    
+    <p class="hint">💡 Astuce : Ajoutez des documents pour enrichir votre présentation</p>
+  </div>
+
+  <script>
+    const WEBHOOK_URL = 'https://n8n.srv928399.hstgr.cloud/webhook/gamma-instant';
+    
+    // Stockage des fichiers sélectionnés
+    let selectedFiles = [];
+    
+    const examples = {
+      comptable: "Créer une présentation sur l'automatisation des processus comptables avec n8n et l'IA. Public : Experts-comptables PME. Inclure : statistiques d'efficacité, outils disponibles (n8n, Claude, ChatGPT), cas d'usage concrets, ROI attendu.",
+      pitch: "Créer un pitch deck pour une startup d'automatisation comptable par IA. Public : Investisseurs seed. Inclure : problème du marché, solution unique, traction/KPIs, business model, équipe, demande de financement 500K€.",
+      formation: "Créer une formation sur l'utilisation de Claude AI pour automatiser les tâches comptables. Public : Comptables débutants en IA. Inclure : introduction à l'IA, cas d'usage pratiques, démonstrations, exercices, ressources."
+    };
+    
+    // Gestion du drag & drop
+    const uploadZone = document.getElementById('uploadZone');
+    const fileInput = document.getElementById('fileInput');
+    
+    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+      uploadZone.addEventListener(eventName, preventDefaults, false);
+    });
+    
+    function preventDefaults(e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    
+    ['dragenter', 'dragover'].forEach(eventName => {
+      uploadZone.addEventListener(eventName, () => {
+        uploadZone.classList.add('dragover');
+      }, false);
+    });
+    
+    ['dragleave', 'drop'].forEach(eventName => {
+      uploadZone.addEventListener(eventName, () => {
+        uploadZone.classList.remove('dragover');
+      }, false);
+    });
+    
+    uploadZone.addEventListener('drop', handleDrop, false);
+    fileInput.addEventListener('change', handleFileSelect, false);
+    
+    function handleDrop(e) {
+      const dt = e.dataTransfer;
+      const files = dt.files;
+      handleFiles(files);
+    }
+    
+    function handleFileSelect(e) {
+      const files = e.target.files;
+      handleFiles(files);
+    }
+    
+    function handleFiles(files) {
+      [...files].forEach(file => {
+        // Vérifier si le fichier n'est pas déjà ajouté
+        if (!selectedFiles.find(f => f.name === file.name && f.size === file.size)) {
+          // Limite de taille : 10MB par fichier
+          if (file.size > 10 * 1024 * 1024) {
+            showStatus('error', `⚠️ "${file.name}" dépasse 10MB`);
+            return;
+          }
+          selectedFiles.push(file);
+        }
+      });
+      updateFileList();
+    }
+    
+    function updateFileList() {
+      const fileList = document.getElementById('fileList');
+      
+      if (selectedFiles.length === 0) {
+        fileList.innerHTML = '';
+        uploadZone.classList.remove('has-files');
+        return;
+      }
+      
+      uploadZone.classList.add('has-files');
+      
+      fileList.innerHTML = selectedFiles.map((file, index) => `
+        <div class="file-item">
+          <div class="file-info">
+            <span class="file-icon">${getFileIcon(file.name)}</span>
+            <span class="file-name">${file.name}</span>
+          </div>
+          <span class="file-size">${formatFileSize(file.size)}</span>
+          <button class="file-remove" onclick="removeFile(${index})">✕</button>
+        </div>
+      `).join('');
+    }
+    
+    function removeFile(index) {
+      selectedFiles.splice(index, 1);
+      updateFileList();
+    }
+    
+    function getFileIcon(filename) {
+      const ext = filename.split('.').pop().toLowerCase();
+      const icons = {
+        pdf: '📕',
+        doc: '📘', docx: '📘',
+        xls: '📗', xlsx: '📗', csv: '📗',
+        ppt: '📙', pptx: '📙',
+        txt: '📄',
+        png: '🖼️', jpg: '🖼️', jpeg: '🖼️', gif: '🖼️', webp: '🖼️'
+      };
+      return icons[ext] || '📎';
+    }
+    
+    function formatFileSize(bytes) {
+      if (bytes < 1024) return bytes + ' B';
+      if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+      return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+    }
+    
+    function fillExample(type) {
+      document.getElementById('prompt').value = examples[type];
+    }
+    
+    // Convertir un fichier en base64 (SANS le préfixe data:...)
+    function fileToBase64(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = () => {
+          // Extraire UNIQUEMENT la partie base64 (sans data:image/png;base64,)
+          const base64 = reader.result.split(',')[1];
+          resolve(base64);
+        };
+        reader.onerror = error => reject(error);
+      });
+    }
+    
+    async function generatePresentation() {
+      const prompt = document.getElementById('prompt').value.trim();
+      const slides = document.getElementById('slides').value;
+      const style = document.getElementById('style').value;
+      
+      const statusDiv = document.getElementById('status');
+      const resultDiv = document.getElementById('result');
+      const generateBtn = document.getElementById('generateBtn');
+      const progressContainer = document.getElementById('progressContainer');
+      const progressFill = document.getElementById('progressFill');
+      const progressText = document.getElementById('progressText');
+      
+      if (!prompt && selectedFiles.length === 0) {
+        showStatus('error', '⚠️ Veuillez entrer un prompt ou ajouter des documents');
+        return;
+      }
+      
+      // ✅ CORRECTION : Envoyer le prompt TEL QUEL en français
+      // On ajoute juste les infos de style et nombre de slides
+      let finalPrompt = prompt || 'Créer une présentation basée sur les documents fournis.';
+      finalPrompt += ` Style ${style}. Créer exactement ${slides} slides.`;
+      
+      // Afficher loading
+      generateBtn.disabled = true;
+      generateBtn.textContent = '⏳ Préparation...';
+      resultDiv.style.display = 'none';
+      
+      try {
+        // Préparer les fichiers en base64
+        let attachments = [];
+        
+        if (selectedFiles.length > 0) {
+          progressContainer.style.display = 'block';
+          progressText.textContent = 'Préparation des fichiers...';
+          
+          for (let i = 0; i < selectedFiles.length; i++) {
+            const file = selectedFiles[i];
+            progressText.textContent = `Traitement de ${file.name}...`;
+            progressFill.style.width = ((i + 1) / selectedFiles.length * 50) + '%';
+            
+            const base64 = await fileToBase64(file);
+            attachments.push({
+              filename: file.name,
+              content: base64,
+              type: file.type,
+              size: file.size
+            });
+          }
+        }
+        
+        progressText.textContent = '🤖 Envoi à l\'IA...';
+        progressFill.style.width = '60%';
+        showStatus('loading', `🤖 Génération en cours... ${selectedFiles.length > 0 ? `(${selectedFiles.length} document(s))` : ''}`);
+        generateBtn.textContent = '⏳ Génération...';
+        
+        // ✅ CORRECTION : Payload simplifié pour le workflow n8n
+        const payload = { 
+          prompt: finalPrompt
+        };
+        
+        // Ajouter les pièces jointes si présentes
+        if (attachments.length > 0) {
+          payload.attachments = attachments;
+        }
+        
+        console.log('📤 Envoi au webhook:', payload);
+        
+        const response = await fetch(WEBHOOK_URL, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(payload)
+        });
+        
+        progressFill.style.width = '90%';
+        
+        if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error(`HTTP ${response.status}: ${errorText}`);
+        }
+        
+        const data = await response.json();
+        console.log('📥 Réponse du webhook:', data);
+        
+        progressFill.style.width = '100%';
+        progressText.textContent = '✅ Terminé !';
+        
+        // ✅ CORRECTION : Affichage amélioré du résultat
+        showStatus('success', '✅ Présentation générée avec succès !');
+        resultDiv.style.display = 'block';
+        
+        // Afficher l'URL Gamma si disponible
+        if (data.gamma_url) {
+          resultDiv.innerHTML = `
+            <strong>🎉 Votre présentation est prête !</strong><br>
+            <a href="${data.gamma_url}" target="_blank">🔗 Ouvrir dans Gamma</a>
+            <div class="result-details">
+              <strong>ID de génération :</strong> ${data.generation_id || 'N/A'}<br>
+              <strong>Statut :</strong> ${data.status || 'En cours'}
+            </div>
+          `;
+        } else if (data.generationId || data.generation_id) {
+          // Si on a juste le generationId mais pas encore l'URL
+          const genId = data.generationId || data.generation_id;
+          resultDiv.innerHTML = `
+            <strong>⏳ Génération en cours...</strong><br>
+            <p>ID: ${genId}</p>
+            <p>La présentation est en cours de création. Vous pouvez vérifier son statut sur <a href="https://gamma.app" target="_blank">gamma.app</a></p>
+            <div class="result-details">
+              ${JSON.stringify(data, null, 2)}
+            </div>
+          `;
+        } else {
+          // Afficher la réponse brute
+          resultDiv.innerHTML = `
+            <strong>Réponse de l'API :</strong>
+            <div class="result-details">
+              ${JSON.stringify(data, null, 2)}
+            </div>
+          `;
+        }
+        
+      } catch (error) {
+        console.error('❌ Erreur:', error);
+        showStatus('error', '❌ Erreur : ' + error.message);
+        resultDiv.style.display = 'block';
+        resultDiv.innerHTML = `
+          <strong>Détails de l'erreur :</strong><br>
+          <div class="result-details">${error.message}</div>
+        `;
+      } finally {
+        generateBtn.disabled = false;
+        generateBtn.textContent = '✨ Générer Présentation';
+        setTimeout(() => {
+          progressContainer.style.display = 'none';
+          progressFill.style.width = '0%';
+        }, 2000);
+      }
+    }
+    
+    function showStatus(type, message) {
+      const statusDiv = document.getElementById('status');
+      statusDiv.className = 'status ' + type;
+      statusDiv.textContent = message;
+      statusDiv.style.display = 'block';
+    }
+    
+    // Raccourci clavier : Ctrl/Cmd + Enter pour générer
+    document.getElementById('prompt').addEventListener('keydown', function(e) {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+        e.preventDefault();
+        generatePresentation();
+      }
+    });
+  </script>
+</body>
+</html>
