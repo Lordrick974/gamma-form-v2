@@ -4,6 +4,10 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>🎨 Gamma AI Generator</title>
+  
+  <!-- 1️⃣ CSS DU CHAT N8N -->
+  <link href="https://cdn.jsdelivr.net/npm/@n8n/chat/dist/style.css" rel="stylesheet" />
+  
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -337,6 +341,44 @@
       font-size: 12px;
       text-align: center;
     }
+
+    /* 🎨 Style personnalisé pour le widget Chat n8n */
+    :root {
+      --chat--color-primary: #667eea;
+      --chat--color-primary-shade-50: #764ba2;
+      --chat--color-primary-shade-100: #5a67d8;
+      --chat--color-secondary: #764ba2;
+      --chat--color-secondary-shade-50: #667eea;
+      --chat--color-white: #ffffff;
+      --chat--color-light: #f8f9fa;
+      --chat--color-light-shade-50: #e9ecef;
+      --chat--color-light-shade-100: #dee2e6;
+      --chat--color-medium: #6c757d;
+      --chat--color-dark: #343a40;
+      --chat--color-disabled: #868e96;
+      --chat--color-typing: #868e96;
+      --chat--spacing: 1rem;
+      --chat--border-radius: 0.5rem;
+      --chat--transition-duration: 0.15s;
+      --chat--window--width: 400px;
+      --chat--window--height: 600px;
+      --chat--header-height: auto;
+      --chat--header--padding: var(--chat--spacing);
+      --chat--header--background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      --chat--header--color: var(--chat--color-white);
+      --chat--header--border-top: none;
+      --chat--header--border-bottom: none;
+      --chat--toggle--background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      --chat--toggle--hover--background: linear-gradient(135deg, #5a67d8 0%, #6b46c1 100%);
+      --chat--toggle--active--background: linear-gradient(135deg, #4c51bf 0%, #553c9a 100%);
+      --chat--toggle--color: var(--chat--color-white);
+      --chat--toggle--size: 64px;
+      --chat--message--bot--background: var(--chat--color-light);
+      --chat--message--bot--color: var(--chat--color-dark);
+      --chat--message--user--background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      --chat--message--user--color: var(--chat--color-white);
+      --chat--message--pre--background: rgba(0, 0, 0, 0.05);
+    }
   </style>
 </head>
 
@@ -416,7 +458,7 @@ Exemple : Créer une présentation professionnelle sur l'intelligence artificiel
       <div id="status" class="status"></div>
       <div id="result" class="result"></div>
 
-      <p class="hint">💡 Astuce : Ajoutez des documents pour enrichir votre présentation</p>
+      <p class="hint">💡 Astuce : Cliquez sur la bulle 💬 en bas à droite pour discuter avec l'assistant IA</p>
     </form>
   </div>
 
@@ -428,7 +470,7 @@ Exemple : Créer une présentation professionnelle sur l'intelligence artificiel
 
     const MAX_FILE_SIZE_MB = 10;
     const MAX_FILES = 10;
-    const MAX_TOTAL_MB = 30; // limite globale (évite les payloads énormes en base64)
+    const MAX_TOTAL_MB = 30;
 
     const SOURCE_TAG = 'gamma-github';
 
@@ -518,7 +560,6 @@ Exemple : Créer une présentation professionnelle sur l'intelligence artificiel
       return true;
     }
 
-    // Convertir un fichier en base64 (SANS le préfixe data:...;base64,)
     function fileToBase64(file) {
       return new Promise((resolve, reject) => {
         const reader = new FileReader();
@@ -553,9 +594,7 @@ Exemple : Créer une présentation professionnelle sur l'intelligence artificiel
           return { kind: 'text', data: null, raw: text };
         }
       }
-      // si n8n renvoie du texte/HTML, on ne plante pas
       try {
-        // tentative JSON même sans header
         const maybe = text ? JSON.parse(text) : null;
         return { kind: 'json', data: maybe, raw: text };
       } catch {
@@ -604,11 +643,10 @@ Exemple : Créer une présentation professionnelle sur l'intelligence artificiel
       const total = totalBytes(selectedFiles);
       filesMeta.textContent = `${selectedFiles.length} fichier(s) • ${formatFileSize(total)}`;
 
-      // bind remove buttons
       fileList.querySelectorAll('[data-remove]').forEach(btn => {
         btn.addEventListener('click', (e) => {
           e.preventDefault();
-          e.stopPropagation(); // évite l'ouverture du file picker
+          e.stopPropagation();
           const idx = Number(btn.getAttribute('data-remove'));
           selectedFiles.splice(idx, 1);
           updateFileList();
@@ -619,7 +657,6 @@ Exemple : Créer une présentation professionnelle sur l'intelligence artificiel
     function handleFiles(files) {
       const incoming = [...files];
 
-      // filtre doublons (nom+taille)
       const merged = [...selectedFiles];
       for (const file of incoming) {
         if (file.size > MAX_FILE_SIZE_MB * 1024 * 1024) {
@@ -636,7 +673,6 @@ Exemple : Créer une présentation professionnelle sur l'intelligence artificiel
       updateFileList();
     }
 
-    // Click & keyboard open file input
     uploadZone.addEventListener('click', () => fileInput.click());
     uploadZone.addEventListener('keydown', (e) => {
       if (e.key === 'Enter' || e.key === ' ') {
@@ -648,11 +684,9 @@ Exemple : Créer une présentation professionnelle sur l'intelligence artificiel
     fileInput.addEventListener('change', (e) => {
       const files = e.target.files;
       handleFiles(files);
-      // reset input to allow reselect same file
       fileInput.value = '';
     });
 
-    // Drag & Drop
     ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
       uploadZone.addEventListener(eventName, (e) => {
         e.preventDefault();
@@ -684,7 +718,6 @@ Exemple : Créer une présentation professionnelle sur l'intelligence artificiel
       });
     });
 
-    // Ctrl/Cmd + Enter
     promptEl.addEventListener('keydown', function(e) {
       if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
         e.preventDefault();
@@ -710,18 +743,15 @@ Exemple : Créer une présentation professionnelle sur l'intelligence artificiel
         return;
       }
 
-      // Prompt final + champs séparés (pratique côté n8n)
       let finalPrompt = prompt || 'Créer une présentation basée sur les documents fournis.';
       finalPrompt += ` Style ${style}. Créer exactement ${slides} slides.`;
 
-      // UI
       generateBtn.disabled = true;
       generateBtn.textContent = '⏳ Préparation...';
 
       try {
         const submittedAt = new Date().toISOString();
 
-        // Convert files → base64
         const attachments = [];
         if (selectedFiles.length > 0) {
           setProgress(5, 'Préparation des fichiers...');
@@ -729,7 +759,7 @@ Exemple : Créer une présentation professionnelle sur l'intelligence artificiel
 
           for (let i = 0; i < selectedFiles.length; i++) {
             const file = selectedFiles[i];
-            const pct = 5 + Math.round(((i + 1) / selectedFiles.length) * 55); // 5 → 60
+            const pct = 5 + Math.round(((i + 1) / selectedFiles.length) * 55);
             setProgress(pct, `Encodage : ${file.name}`);
 
             const base64 = await fileToBase64(file);
@@ -745,7 +775,6 @@ Exemple : Créer une présentation professionnelle sur l'intelligence artificiel
         setProgress(70, "🤖 Envoi à n8n...");
         showStatus('loading', "🤖 Génération en cours...");
 
-        // Payload complet (clair côté n8n)
         const payload = {
           source: SOURCE_TAG,
           submitted_at: submittedAt,
@@ -756,7 +785,6 @@ Exemple : Créer une présentation professionnelle sur l'intelligence artificiel
           attachments
         };
 
-        // IMPORTANT : JSON => besoin CORS côté Webhook n8n (Allowed Origins)
         const response = await fetchWithTimeout(WEBHOOK_URL, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -775,7 +803,6 @@ Exemple : Créer une présentation professionnelle sur l'intelligence artificiel
         setProgress(100, "✅ Terminé");
         showStatus('success', '✅ Demande envoyée avec succès !');
 
-        // Affichage résultat (si ton n8n renvoie une URL gamma)
         resultDiv.style.display = 'block';
 
         const data = parsed.data || {};
@@ -796,22 +823,16 @@ ${parsed.raw || '(vide)'}
             </div>
           `;
         } else {
-          // Si ton workflow ne renvoie rien (fire-and-forget) : pas d’erreur
           resultDiv.innerHTML = `
             <strong>✅ Envoyé.</strong><br>
             <div class="result-details">
-Ton workflow n8n ne renvoie pas d’URL (mode "fire-and-forget"), c’est normal.
+Ton workflow n8n ne renvoie pas d'URL (mode "fire-and-forget"), c'est normal.
 
 Réponse brute:
 ${parsed.raw || '(vide)'}
             </div>
           `;
         }
-
-        // Reset UI + fichiers (optionnel : je laisse les fichiers, à toi de voir)
-        // selectedFiles = [];
-        // updateFileList();
-        // promptEl.value = '';
 
       } catch (error) {
         console.error('❌ Erreur:', error);
@@ -828,6 +849,30 @@ ${parsed.raw || '(vide)'}
       }
     });
   </script>
+
+  <!-- 2️⃣ SCRIPT DU CHAT N8N - Widget flottant -->
+  <script type="module">
+    import { createChat } from 'https://cdn.jsdelivr.net/npm/@n8n/chat/dist/chat.bundle.es.js';
+    
+    createChat({
+      webhookUrl: 'https://n8n.srv928399.hstgr.cloud/webhook/gamma-chat-public/chat',
+      mode: 'window',
+      showWelcomeScreen: true,
+      initialMessages: [
+        'Bonjour ! 👋 Je suis votre assistant Gamma AI.',
+        'Je peux créer des présentations professionnelles pour vous.',
+        'Décrivez simplement le sujet de votre présentation !'
+      ],
+      i18n: {
+        fr: {
+          title: '🎨 Gamma AI - COLOSSE',
+          subtitle: 'Créez des présentations pro en quelques secondes',
+          inputPlaceholder: 'Décrivez votre présentation...',
+          getStarted: 'Commencer',
+          closeButtonTooltip: 'Fermer'
+        }
+      }
+    });
+  </script>
 </body>
 </html>
-
