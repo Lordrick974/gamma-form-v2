@@ -1002,25 +1002,43 @@ async function generatePresentation() {
     updateStep('analyze', 'active');
     updateProgress(25);
 
-    const response = await fetch(WEBHOOK_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
-    });
+    // Timeout de 120s pour la génération IA
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 120000);
+
+    let response;
+    try {
+      response = await fetch(WEBHOOK_URL, {
+        method: 'POST',
+        mode: 'cors',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+        signal: controller.signal
+      });
+    } catch (fetchErr) {
+      clearTimeout(timeoutId);
+      if (fetchErr.name === 'AbortError') {
+        throw new Error('Timeout: la génération a pris plus de 2 minutes. Vérifiez sur gamma.app/my');
+      }
+      throw new Error(`Erreur réseau: ${fetchErr.message}\n\nVérifiez que le serveur n8n est accessible.`);
+    }
+    clearTimeout(timeoutId);
 
     updateStep('analyze', 'done');
     updateStep('research', 'active');
     updateProgress(50);
 
     if (!response.ok) {
-      throw new Error(`Erreur serveur: ${response.status} ${response.statusText}`);
+      const errorText = await response.text().catch(() => '');
+      throw new Error(`Erreur serveur ${response.status}: ${errorText || response.statusText}`);
     }
+
+    const data = await response.json();
+    console.log('Webhook response:', data);
 
     updateStep('research', 'done');
     updateStep('generate', 'active');
-    updateProgress(75);
-
-    const data = await response.json();
+    updateProgress(60);
 
     // Check for direct URL (legacy) or async polling
     const directUrl = data.url || data.gamma_url || data.link || data.data?.url || data.gamma_response?.url || null;
@@ -1035,17 +1053,15 @@ async function generatePresentation() {
         `${slides} slides • Style ${style}` + (filesPayload.length > 0 ? ` • ${filesPayload.length} document(s) analysé(s)` : '');
       result.classList.add('active');
       progress.classList.remove('active');
-    } else if (data.generationId && data.pollUrl) {
+    } else if (data.generationId) {
       // Async: poll Gamma API for completion
-      updateStep('research', 'done');
-      updateStep('generate', 'active');
-      updateProgress(60);
-
       const GAMMA_API_KEY = 'sk-gamma-HgMcTCud0H3WHUwly4kgKAEnEYANOLP9tJ5HE2IRo';
-      const pollUrl = data.pollUrl;
+      const pollUrl = data.pollUrl || `https://public-api.gamma.app/v1.0/generations/${data.generationId}`;
       const maxAttempts = 60; // 5 minutes max (5s intervals)
       let attempt = 0;
       let resolved = false;
+
+      console.log('Polling:', pollUrl);
 
       while (attempt < maxAttempts && !resolved) {
         await delay(5000);
@@ -1059,10 +1075,12 @@ async function generatePresentation() {
 
           if (!pollResp.ok) {
             if (pollResp.status === 404) continue; // Not ready yet
-            throw new Error(`Erreur polling: ${pollResp.status}`);
+            console.warn(`Poll attempt ${attempt}: status ${pollResp.status}`);
+            continue;
           }
 
           const pollData = await pollResp.json();
+          console.log(`Poll attempt ${attempt}:`, pollData);
           const status = pollData.status || pollData.state || '';
 
           if (status === 'completed' || status === 'done' || status === 'success' || pollData.url) {
@@ -1087,6 +1105,7 @@ async function generatePresentation() {
           }
           // else: still processing, continue polling
         } catch (pollErr) {
+          console.warn(`Poll error attempt ${attempt}:`, pollErr);
           if (attempt >= maxAttempts) throw pollErr;
           // Otherwise continue polling
         }
@@ -1104,7 +1123,7 @@ async function generatePresentation() {
 
       progress.classList.remove('active');
     } else {
-      // Fallback
+      // Fallback - no generationId
       updateStep('generate', 'done');
       updateProgress(100);
       document.getElementById('resultInfo').textContent = 'Traitement terminé. Vérifiez votre compte Gamma.';
@@ -1116,7 +1135,7 @@ async function generatePresentation() {
   } catch (err) {
     console.error('Generation error:', err);
     progress.classList.remove('active');
-    document.getElementById('errorMsg').textContent = err.message;
+    document.getElementById('errorMsg').textContent = err.message || 'Erreur inconnue';
     error.classList.add('active');
   } finally {
     btn.disabled = false;
