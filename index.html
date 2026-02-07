@@ -1,33 +1,1103 @@
-{
-  "prompt": "...",
-  "slides": 10,
-  "style": "professionnel",
-  "hasDocuments": true,
-  "documentCount": 2,
-  "files": [
-    {
-      "name": "bilan-2024.pdf",
-      "type": "application/pdf",
-      "size": 123456,
-      "data": "data:application/pdf;base64,JVBERi0x..."
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>🎨 Gamma AI Generator</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-primary: #0a0a0f;
+      --bg-secondary: #12121a;
+      --bg-card: #1a1a2e;
+      --bg-card-hover: #1e1e35;
+      --border: #2a2a40;
+      --border-active: #6c5ce7;
+      --text-primary: #e8e8f0;
+      --text-secondary: #8888a8;
+      --text-muted: #555570;
+      --accent: #6c5ce7;
+      --accent-light: #a29bfe;
+      --accent-glow: rgba(108, 92, 231, 0.3);
+      --success: #00cec9;
+      --success-glow: rgba(0, 206, 201, 0.2);
+      --warning: #fdcb6e;
+      --danger: #ff6b6b;
+      --danger-glow: rgba(255, 107, 107, 0.2);
+      --gradient-1: linear-gradient(135deg, #6c5ce7, #a29bfe);
+      --gradient-2: linear-gradient(135deg, #00cec9, #55efc4);
+      --radius: 12px;
+      --radius-sm: 8px;
+      --shadow: 0 4px 24px rgba(0,0,0,0.4);
+      --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     }
-  ]
-}
-```
 
-### 2. Workflow n8n (`gamma-workflow-v2.json`)
-Importe le workflow dans ton n8n via **Settings → Import from File**. Le flux est :
-```
-🌐 Webhook (/gamma-generator)
-    ↓
-⚙️ Préparer Données (extract prompt, slides, style, files)
-    ↓
-📎 Documents ? (IF node)
-    ↓ OUI                    ↓ NON
-📄 Extraire Fichiers     📝 Sans Documents
-    ↓                        ↓
-🤖 Agent IA Gamma (Claude Sonnet 4)
-    ↓
-🚀 POST → GAMMA API
-    ↓
-📤 Réponse Webhook (avec URL Gamma)
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Sora', sans-serif;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* Background pattern */
+    body::before {
+      content: '';
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background:
+        radial-gradient(ellipse at 20% 0%, rgba(108, 92, 231, 0.08) 0%, transparent 60%),
+        radial-gradient(ellipse at 80% 100%, rgba(0, 206, 201, 0.06) 0%, transparent 60%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .container {
+      max-width: 560px;
+      margin: 0 auto;
+      padding: 24px 16px 40px;
+      position: relative;
+      z-index: 1;
+    }
+
+    /* Header */
+    .header {
+      text-align: center;
+      margin-bottom: 28px;
+      animation: fadeDown 0.6s ease;
+    }
+
+    .header-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 5px 14px;
+      font-size: 11px;
+      color: var(--text-secondary);
+      margin-bottom: 16px;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+    }
+
+    .header-badge .dot {
+      width: 6px; height: 6px;
+      background: var(--success);
+      border-radius: 50%;
+      animation: pulse 2s infinite;
+    }
+
+    .header h1 {
+      font-size: 28px;
+      font-weight: 700;
+      background: var(--gradient-1);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 6px;
+    }
+
+    .header p {
+      color: var(--text-secondary);
+      font-size: 13px;
+      font-weight: 300;
+    }
+
+    /* Sections */
+    .section {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+      margin-bottom: 16px;
+      animation: fadeUp 0.5s ease;
+    }
+
+    .section-label {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      margin-bottom: 12px;
+    }
+
+    .section-label .icon {
+      font-size: 14px;
+    }
+
+    /* Textarea */
+    .prompt-area {
+      width: 100%;
+      min-height: 100px;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 14px;
+      color: var(--text-primary);
+      font-family: 'Sora', sans-serif;
+      font-size: 14px;
+      line-height: 1.6;
+      resize: vertical;
+      transition: var(--transition);
+      outline: none;
+    }
+
+    .prompt-area:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-glow);
+    }
+
+    .prompt-area::placeholder {
+      color: var(--text-muted);
+    }
+
+    /* File Drop Zone */
+    .drop-zone {
+      border: 2px dashed var(--border);
+      border-radius: var(--radius-sm);
+      padding: 24px;
+      text-align: center;
+      cursor: pointer;
+      transition: var(--transition);
+      background: var(--bg-secondary);
+      position: relative;
+    }
+
+    .drop-zone:hover,
+    .drop-zone.dragover {
+      border-color: var(--accent);
+      background: rgba(108, 92, 231, 0.05);
+    }
+
+    .drop-zone.dragover {
+      transform: scale(1.01);
+      box-shadow: 0 0 20px var(--accent-glow);
+    }
+
+    .drop-zone .drop-icon {
+      font-size: 32px;
+      margin-bottom: 8px;
+    }
+
+    .drop-zone .drop-text {
+      font-size: 13px;
+      color: var(--text-secondary);
+      font-weight: 400;
+    }
+
+    .drop-zone .drop-text strong {
+      color: var(--accent-light);
+    }
+
+    .drop-zone .drop-formats {
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-top: 6px;
+    }
+
+    .drop-zone input[type="file"] {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      cursor: pointer;
+    }
+
+    /* File List */
+    .file-list {
+      margin-top: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .file-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 10px 12px;
+      animation: fadeIn 0.3s ease;
+    }
+
+    .file-item .file-icon {
+      font-size: 20px;
+      flex-shrink: 0;
+    }
+
+    .file-item .file-info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .file-item .file-name {
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--text-primary);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .file-item .file-meta {
+      font-size: 10px;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 2px;
+    }
+
+    .file-item .file-status {
+      font-size: 10px;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-weight: 500;
+    }
+
+    .file-item .file-status.ready {
+      background: var(--success-glow);
+      color: var(--success);
+    }
+
+    .file-item .file-status.processing {
+      background: rgba(253, 203, 110, 0.15);
+      color: var(--warning);
+    }
+
+    .file-item .file-status.error {
+      background: var(--danger-glow);
+      color: var(--danger);
+    }
+
+    .file-item .file-remove {
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      font-size: 16px;
+      padding: 4px;
+      transition: var(--transition);
+      flex-shrink: 0;
+    }
+
+    .file-item .file-remove:hover {
+      color: var(--danger);
+    }
+
+    /* Options Grid */
+    .options-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .option-group label {
+      display: block;
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+      font-weight: 500;
+    }
+
+    .option-group select {
+      width: 100%;
+      padding: 10px 12px;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      color: var(--text-primary);
+      font-family: 'Sora', sans-serif;
+      font-size: 13px;
+      cursor: pointer;
+      transition: var(--transition);
+      outline: none;
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%238888a8' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 12px center;
+    }
+
+    .option-group select:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-glow);
+    }
+
+    /* Templates */
+    .templates {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .template-btn {
+      padding: 8px 14px;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      color: var(--text-secondary);
+      font-family: 'Sora', sans-serif;
+      font-size: 12px;
+      cursor: pointer;
+      transition: var(--transition);
+      white-space: nowrap;
+    }
+
+    .template-btn:hover {
+      border-color: var(--accent);
+      color: var(--accent-light);
+      background: rgba(108, 92, 231, 0.08);
+    }
+
+    /* Generate Button */
+    .generate-btn {
+      width: 100%;
+      padding: 16px;
+      background: var(--gradient-1);
+      border: none;
+      border-radius: var(--radius);
+      color: white;
+      font-family: 'Sora', sans-serif;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: var(--transition);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      position: relative;
+      overflow: hidden;
+      margin-top: 20px;
+    }
+
+    .generate-btn:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 30px var(--accent-glow);
+    }
+
+    .generate-btn:active:not(:disabled) {
+      transform: translateY(0);
+    }
+
+    .generate-btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    .generate-btn .shimmer {
+      position: absolute;
+      top: 0; left: -100%;
+      width: 100%; height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent);
+      animation: shimmer 2s infinite;
+    }
+
+    /* Progress */
+    .progress-container {
+      display: none;
+      margin-top: 16px;
+      animation: fadeIn 0.3s ease;
+    }
+
+    .progress-container.active {
+      display: block;
+    }
+
+    .progress-bar-track {
+      height: 4px;
+      background: var(--bg-secondary);
+      border-radius: 2px;
+      overflow: hidden;
+      margin-bottom: 10px;
+    }
+
+    .progress-bar-fill {
+      height: 100%;
+      background: var(--gradient-1);
+      border-radius: 2px;
+      width: 0%;
+      transition: width 0.5s ease;
+    }
+
+    .progress-steps {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .progress-step {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      color: var(--text-muted);
+      transition: var(--transition);
+    }
+
+    .progress-step.active {
+      color: var(--accent-light);
+    }
+
+    .progress-step.done {
+      color: var(--success);
+    }
+
+    .progress-step .step-icon {
+      font-size: 14px;
+      width: 18px;
+      text-align: center;
+    }
+
+    /* Result */
+    .result-container {
+      display: none;
+      margin-top: 16px;
+      animation: fadeUp 0.5s ease;
+    }
+
+    .result-container.active {
+      display: block;
+    }
+
+    .result-card {
+      background: var(--bg-card);
+      border: 1px solid var(--success);
+      border-radius: var(--radius);
+      padding: 20px;
+      text-align: center;
+    }
+
+    .result-card .result-icon {
+      font-size: 40px;
+      margin-bottom: 10px;
+    }
+
+    .result-card h3 {
+      font-size: 16px;
+      margin-bottom: 6px;
+      color: var(--success);
+    }
+
+    .result-card p {
+      font-size: 12px;
+      color: var(--text-secondary);
+      margin-bottom: 16px;
+    }
+
+    .result-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 10px 24px;
+      background: var(--gradient-2);
+      border: none;
+      border-radius: var(--radius-sm);
+      color: var(--bg-primary);
+      font-family: 'Sora', sans-serif;
+      font-size: 13px;
+      font-weight: 600;
+      text-decoration: none;
+      transition: var(--transition);
+    }
+
+    .result-link:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 16px var(--success-glow);
+    }
+
+    /* Error */
+    .error-container {
+      display: none;
+      margin-top: 16px;
+      animation: fadeIn 0.3s ease;
+    }
+
+    .error-container.active {
+      display: block;
+    }
+
+    .error-card {
+      background: var(--bg-card);
+      border: 1px solid var(--danger);
+      border-radius: var(--radius);
+      padding: 16px;
+    }
+
+    .error-card .error-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--danger);
+      margin-bottom: 6px;
+    }
+
+    .error-card .error-msg {
+      font-size: 12px;
+      color: var(--text-secondary);
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .error-card .retry-btn {
+      margin-top: 12px;
+      padding: 8px 16px;
+      background: var(--danger-glow);
+      border: 1px solid var(--danger);
+      border-radius: var(--radius-sm);
+      color: var(--danger);
+      font-family: 'Sora', sans-serif;
+      font-size: 12px;
+      cursor: pointer;
+      transition: var(--transition);
+    }
+
+    .error-card .retry-btn:hover {
+      background: rgba(255, 107, 107, 0.3);
+    }
+
+    /* Footer */
+    .footer {
+      text-align: center;
+      margin-top: 24px;
+      padding-top: 16px;
+      border-top: 1px solid var(--border);
+    }
+
+    .footer p {
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    .footer a {
+      color: var(--accent-light);
+      text-decoration: none;
+    }
+
+    /* Animations */
+    @keyframes fadeDown {
+      from { opacity: 0; transform: translateY(-12px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(12px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+
+    @keyframes shimmer {
+      0% { left: -100%; }
+      100% { left: 200%; }
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .spinner {
+      display: inline-block;
+      width: 16px; height: 16px;
+      border: 2px solid rgba(255,255,255,0.3);
+      border-top-color: white;
+      border-radius: 50%;
+      animation: spin 0.6s linear infinite;
+    }
+
+    /* Responsive */
+    @media (max-width: 480px) {
+      .container { padding: 16px 12px 32px; }
+      .header h1 { font-size: 22px; }
+      .options-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <!-- Header -->
+  <div class="header">
+    <div class="header-badge">
+      <span class="dot"></span>
+      <span>Gamma AI • Cabinet GLOBAL974</span>
+    </div>
+    <h1>🎨 Gamma AI Generator</h1>
+    <p>Créez des présentations professionnelles avec l'IA</p>
+  </div>
+
+  <!-- Prompt -->
+  <div class="section" style="animation-delay: 0.1s">
+    <div class="section-label">
+      <span class="icon">✏️</span>
+      <span>Votre Prompt</span>
+    </div>
+    <textarea id="prompt" class="prompt-area" placeholder="Décrivez votre présentation... &#10;Ex: Présentation du bilan annuel 2024 pour Cabinet GLOBAL974 avec les chiffres clés, analyse sectorielle et perspectives 2025."></textarea>
+  </div>
+
+  <!-- Documents -->
+  <div class="section" style="animation-delay: 0.15s">
+    <div class="section-label">
+      <span class="icon">📎</span>
+      <span>Documents sources</span>
+      <span style="margin-left: auto; font-size: 10px; color: var(--text-muted); text-transform: none; letter-spacing: 0; font-weight: 400;">
+        Les docs seront analysés par l'IA
+      </span>
+    </div>
+    <div class="drop-zone" id="dropZone">
+      <input type="file" id="fileInput" multiple
+        accept=".pdf,.docx,.doc,.xlsx,.xls,.pptx,.ppt,.txt,.csv,.png,.jpg,.jpeg,.gif,.webp" />
+      <div class="drop-icon">📂</div>
+      <div class="drop-text"><strong>Cliquez</strong> ou <strong>glissez-déposez</strong> vos documents</div>
+      <div class="drop-formats">PDF, DOCX, XLSX, PPTX, TXT, CSV, Images — max 10 MB/fichier</div>
+    </div>
+    <div class="file-list" id="fileList"></div>
+  </div>
+
+  <!-- Options -->
+  <div class="section" style="animation-delay: 0.2s">
+    <div class="section-label">
+      <span class="icon">⚙️</span>
+      <span>Options</span>
+    </div>
+    <div class="options-grid">
+      <div class="option-group">
+        <label>Nombre de slides</label>
+        <select id="slides">
+          <option value="5">5 slides</option>
+          <option value="8">8 slides</option>
+          <option value="10" selected>10 slides</option>
+          <option value="12">12 slides</option>
+          <option value="15">15 slides</option>
+          <option value="20">20 slides</option>
+          <option value="25">25 slides</option>
+          <option value="30">30 slides</option>
+        </select>
+      </div>
+      <div class="option-group">
+        <label>Style</label>
+        <select id="style">
+          <option value="professionnel" selected>Professionnel</option>
+          <option value="moderne">Moderne</option>
+          <option value="creatif">Créatif</option>
+          <option value="minimaliste">Minimaliste</option>
+          <option value="dynamique">Dynamique</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <!-- Templates -->
+  <div class="section" style="animation-delay: 0.25s">
+    <div class="section-label">
+      <span class="icon">💡</span>
+      <span>Modèles rapides</span>
+    </div>
+    <div class="templates">
+      <button class="template-btn" data-prompt="Présentation du bilan comptable annuel 2024 : chiffres clés, analyse des indicateurs financiers, recommandations stratégiques et perspectives 2025. Inclure des graphiques comparatifs et un résumé exécutif.">💼 Bilan Comptable</button>
+      <button class="template-btn" data-prompt="Pitch deck pour lever des fonds : problème identifié, solution proposée, marché cible, modèle économique, équipe, traction actuelle et besoins de financement.">🚀 Pitch Deck</button>
+      <button class="template-btn" data-prompt="Support de formation pour les collaborateurs du cabinet : procédures internes, outils utilisés, bonnes pratiques comptables et fiscales, cas pratiques.">📚 Formation</button>
+      <button class="template-btn" data-prompt="Présentation client pour la clôture fiscale : obligations déclaratives, échéances clés, optimisations fiscales possibles, recommandations personnalisées.">📊 Clôture Fiscale</button>
+    </div>
+  </div>
+
+  <!-- Generate Button -->
+  <button class="generate-btn" id="generateBtn" onclick="generatePresentation()">
+    <span class="shimmer"></span>
+    <span id="btnText">✨ Générer la Présentation</span>
+  </button>
+
+  <!-- Progress -->
+  <div class="progress-container" id="progressContainer">
+    <div class="progress-bar-track">
+      <div class="progress-bar-fill" id="progressBar"></div>
+    </div>
+    <div class="progress-steps" id="progressSteps">
+      <div class="progress-step" data-step="upload">
+        <span class="step-icon">⏳</span>
+        <span>Envoi des documents au serveur...</span>
+      </div>
+      <div class="progress-step" data-step="analyze">
+        <span class="step-icon">⏳</span>
+        <span>Analyse IA des documents...</span>
+      </div>
+      <div class="progress-step" data-step="research">
+        <span class="step-icon">⏳</span>
+        <span>Recherche et enrichissement...</span>
+      </div>
+      <div class="progress-step" data-step="generate">
+        <span class="step-icon">⏳</span>
+        <span>Génération de la présentation Gamma...</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Result -->
+  <div class="result-container" id="resultContainer">
+    <div class="result-card">
+      <div class="result-icon">🎉</div>
+      <h3>Présentation générée !</h3>
+      <p id="resultInfo">Votre présentation est prête à être consultée</p>
+      <a id="resultLink" class="result-link" href="#" target="_blank">
+        🔗 Ouvrir dans Gamma
+      </a>
+    </div>
+  </div>
+
+  <!-- Error -->
+  <div class="error-container" id="errorContainer">
+    <div class="error-card">
+      <div class="error-title">❌ Erreur</div>
+      <div class="error-msg" id="errorMsg"></div>
+      <button class="retry-btn" onclick="resetUI()">🔄 Réessayer</button>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div class="footer">
+    <p>Powered by <a href="https://n8n.srv928399.hstgr.cloud" target="_blank">n8n</a> + Claude AI + <a href="https://gamma.app" target="_blank">Gamma</a></p>
+  </div>
+</div>
+
+<script>
+// ========== CONFIG ==========
+const WEBHOOK_URL = 'https://n8n.srv928399.hstgr.cloud/webhook/gamma-generator';
+const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB
+const ALLOWED_TYPES = [
+  'application/pdf',
+  'application/msword',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  'application/vnd.ms-excel',
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  'application/vnd.ms-powerpoint',
+  'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+  'text/plain',
+  'text/csv',
+  'image/png',
+  'image/jpeg',
+  'image/gif',
+  'image/webp'
+];
+
+// ========== STATE ==========
+let uploadedFiles = [];
+
+// ========== FILE HANDLING ==========
+const dropZone = document.getElementById('dropZone');
+const fileInput = document.getElementById('fileInput');
+const fileList = document.getElementById('fileList');
+
+// Drag & Drop
+dropZone.addEventListener('dragover', (e) => {
+  e.preventDefault();
+  dropZone.classList.add('dragover');
+});
+
+dropZone.addEventListener('dragleave', () => {
+  dropZone.classList.remove('dragover');
+});
+
+dropZone.addEventListener('drop', (e) => {
+  e.preventDefault();
+  dropZone.classList.remove('dragover');
+  handleFiles(e.dataTransfer.files);
+});
+
+fileInput.addEventListener('change', (e) => {
+  handleFiles(e.target.files);
+  fileInput.value = '';
+});
+
+function handleFiles(files) {
+  for (const file of files) {
+    if (file.size > MAX_FILE_SIZE) {
+      alert(`"${file.name}" dépasse la limite de 10 MB.`);
+      continue;
+    }
+    if (!ALLOWED_TYPES.includes(file.type) && !file.name.match(/\.(pdf|docx?|xlsx?|pptx?|txt|csv|png|jpe?g|gif|webp)$/i)) {
+      alert(`"${file.name}" : format non supporté.`);
+      continue;
+    }
+    // Avoid duplicates
+    if (uploadedFiles.some(f => f.name === file.name && f.size === file.size)) continue;
+
+    const fileObj = {
+      id: Date.now() + '-' + Math.random().toString(36).substr(2, 6),
+      name: file.name,
+      size: file.size,
+      type: file.type || guessType(file.name),
+      status: 'processing',
+      data: null,
+      rawFile: file
+    };
+
+    uploadedFiles.push(fileObj);
+    renderFileList();
+
+    // Read as base64
+    const reader = new FileReader();
+    reader.onload = () => {
+      fileObj.data = reader.result;
+      fileObj.status = 'ready';
+      renderFileList();
+    };
+    reader.onerror = () => {
+      fileObj.status = 'error';
+      renderFileList();
+    };
+    reader.readAsDataURL(file);
+  }
+}
+
+function guessType(filename) {
+  const ext = filename.split('.').pop().toLowerCase();
+  const map = {
+    pdf: 'application/pdf',
+    doc: 'application/msword',
+    docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    xls: 'application/vnd.ms-excel',
+    xlsx: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    ppt: 'application/vnd.ms-powerpoint',
+    pptx: 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+    txt: 'text/plain',
+    csv: 'text/csv',
+    png: 'image/png',
+    jpg: 'image/jpeg',
+    jpeg: 'image/jpeg',
+    gif: 'image/gif',
+    webp: 'image/webp'
+  };
+  return map[ext] || 'application/octet-stream';
+}
+
+function getFileIcon(type) {
+  if (type.includes('pdf')) return '📕';
+  if (type.includes('word') || type.includes('document')) return '📘';
+  if (type.includes('excel') || type.includes('spreadsheet')) return '📗';
+  if (type.includes('powerpoint') || type.includes('presentation')) return '📙';
+  if (type.includes('image')) return '🖼️';
+  if (type.includes('text') || type.includes('csv')) return '📄';
+  return '📎';
+}
+
+function formatSize(bytes) {
+  if (bytes < 1024) return bytes + ' B';
+  if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
+  return (bytes / 1048576).toFixed(1) + ' MB';
+}
+
+function removeFile(id) {
+  uploadedFiles = uploadedFiles.filter(f => f.id !== id);
+  renderFileList();
+}
+
+function renderFileList() {
+  if (uploadedFiles.length === 0) {
+    fileList.innerHTML = '';
+    return;
+  }
+  fileList.innerHTML = uploadedFiles.map(f => `
+    <div class="file-item">
+      <span class="file-icon">${getFileIcon(f.type)}</span>
+      <div class="file-info">
+        <div class="file-name">${f.name}</div>
+        <div class="file-meta">
+          <span>${formatSize(f.size)}</span>
+          <span class="file-status ${f.status}">
+            ${f.status === 'ready' ? '✓ Prêt' : f.status === 'processing' ? '⏳ Lecture...' : '✕ Erreur'}
+          </span>
+        </div>
+      </div>
+      <button class="file-remove" onclick="removeFile('${f.id}')" title="Retirer">✕</button>
+    </div>
+  `).join('');
+}
+
+// ========== TEMPLATES ==========
+document.querySelectorAll('.template-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.getElementById('prompt').value = btn.dataset.prompt;
+    document.getElementById('prompt').focus();
+  });
+});
+
+// ========== GENERATION ==========
+async function generatePresentation() {
+  const prompt = document.getElementById('prompt').value.trim();
+  const slides = document.getElementById('slides').value;
+  const style = document.getElementById('style').value;
+
+  if (!prompt) {
+    document.getElementById('prompt').focus();
+    document.getElementById('prompt').style.borderColor = 'var(--danger)';
+    setTimeout(() => document.getElementById('prompt').style.borderColor = '', 2000);
+    return;
+  }
+
+  // Check all files ready
+  const pendingFiles = uploadedFiles.filter(f => f.status === 'processing');
+  if (pendingFiles.length > 0) {
+    alert('Certains fichiers sont encore en cours de lecture. Veuillez patienter.');
+    return;
+  }
+
+  const btn = document.getElementById('generateBtn');
+  const btnText = document.getElementById('btnText');
+  const progress = document.getElementById('progressContainer');
+  const result = document.getElementById('resultContainer');
+  const error = document.getElementById('errorContainer');
+
+  // Reset
+  btn.disabled = true;
+  btnText.innerHTML = '<span class="spinner"></span> Traitement en cours...';
+  progress.classList.add('active');
+  result.classList.remove('active');
+  error.classList.remove('active');
+
+  // Prepare files payload
+  const filesPayload = uploadedFiles
+    .filter(f => f.status === 'ready' && f.data)
+    .map(f => ({
+      name: f.name,
+      type: f.type,
+      size: f.size,
+      data: f.data  // base64 data URL
+    }));
+
+  const payload = {
+    prompt: prompt,
+    slides: parseInt(slides),
+    style: style,
+    hasDocuments: filesPayload.length > 0,
+    documentCount: filesPayload.length,
+    files: filesPayload,
+    source: 'gamma-form-v2',
+    timestamp: new Date().toISOString()
+  };
+
+  // Animate progress
+  updateStep('upload', 'active');
+  updateProgress(10);
+
+  try {
+    // Step 1: Send to webhook
+    await delay(300);
+    updateStep('upload', 'done');
+    updateStep('analyze', 'active');
+    updateProgress(25);
+
+    const response = await fetch(WEBHOOK_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+
+    updateStep('analyze', 'done');
+    updateStep('research', 'active');
+    updateProgress(50);
+
+    if (!response.ok) {
+      throw new Error(`Erreur serveur: ${response.status} ${response.statusText}`);
+    }
+
+    updateStep('research', 'done');
+    updateStep('generate', 'active');
+    updateProgress(75);
+
+    const data = await response.json();
+
+    updateStep('generate', 'done');
+    updateProgress(100);
+
+    await delay(500);
+
+    // Show result
+    const gammaUrl = data.url || data.gamma_url || data.link || data.data?.url || data.gamma_response?.url || null;
+
+    if (gammaUrl) {
+      document.getElementById('resultLink').href = gammaUrl;
+      document.getElementById('resultInfo').textContent =
+        `${slides} slides • Style ${style}` + (filesPayload.length > 0 ? ` • ${filesPayload.length} document(s) analysé(s)` : '');
+      result.classList.add('active');
+    } else {
+      // Maybe the response itself is the content
+      document.getElementById('resultInfo').textContent = 'Traitement terminé. La présentation est en cours de génération sur Gamma.';
+      if (data.gamma_response) {
+        document.getElementById('resultLink').href = '#';
+        document.getElementById('resultLink').textContent = '📋 Voir les détails';
+        document.getElementById('resultLink').onclick = () => {
+          alert(JSON.stringify(data.gamma_response, null, 2));
+          return false;
+        };
+      }
+      result.classList.add('active');
+    }
+
+    progress.classList.remove('active');
+  } catch (err) {
+    console.error('Generation error:', err);
+    progress.classList.remove('active');
+    document.getElementById('errorMsg').textContent = err.message;
+    error.classList.add('active');
+  } finally {
+    btn.disabled = false;
+    btnText.textContent = '✨ Générer la Présentation';
+  }
+}
+
+function updateStep(stepName, status) {
+  const step = document.querySelector(`.progress-step[data-step="${stepName}"]`);
+  if (!step) return;
+  step.className = `progress-step ${status}`;
+  const icon = step.querySelector('.step-icon');
+  if (status === 'done') icon.textContent = '✅';
+  else if (status === 'active') icon.textContent = '🔄';
+  else icon.textContent = '⏳';
+}
+
+function updateProgress(percent) {
+  document.getElementById('progressBar').style.width = percent + '%';
+}
+
+function resetUI() {
+  document.getElementById('progressContainer').classList.remove('active');
+  document.getElementById('resultContainer').classList.remove('active');
+  document.getElementById('errorContainer').classList.remove('active');
+  // Reset progress steps
+  document.querySelectorAll('.progress-step').forEach(s => {
+    s.className = 'progress-step';
+    s.querySelector('.step-icon').textContent = '⏳';
+  });
+  updateProgress(0);
+}
+
+function delay(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+// ========== KEYBOARD SHORTCUT ==========
+document.getElementById('prompt').addEventListener('keydown', (e) => {
+  if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+    e.preventDefault();
+    generatePresentation();
+  }
+});
+</script>
+</body>
+</html>
