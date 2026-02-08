@@ -1054,14 +1054,14 @@ async function generatePresentation() {
       result.classList.add('active');
       progress.classList.remove('active');
     } else if (data.generationId) {
-      // Async: poll Gamma API for completion
-      const GAMMA_API_KEY = 'sk-gamma-HgMcTCud0H3WHUwly4kgKAEnEYANOLP9tJ5HE2IRo';
-      const pollUrl = data.pollUrl || `https://public-api.gamma.app/v1.0/generations/${data.generationId}`;
+      // Async: poll via n8n proxy (avoids CORS with Gamma API)
+      const POLL_PROXY = 'https://n8n.srv928399.hstgr.cloud/webhook/gamma-poll';
+      const generationId = data.generationId;
       const maxAttempts = 60; // 5 minutes max (5s intervals)
       let attempt = 0;
       let resolved = false;
 
-      console.log('Polling:', pollUrl);
+      console.log('Polling via proxy for generationId:', generationId);
 
       while (attempt < maxAttempts && !resolved) {
         await delay(5000);
@@ -1069,12 +1069,11 @@ async function generatePresentation() {
         updateProgress(60 + Math.min(35, attempt * 1.5));
 
         try {
-          const pollResp = await fetch(pollUrl, {
-            headers: { 'X-API-KEY': GAMMA_API_KEY }
+          const pollResp = await fetch(`${POLL_PROXY}?id=${generationId}`, {
+            mode: 'cors'
           });
 
           if (!pollResp.ok) {
-            if (pollResp.status === 404) continue; // Not ready yet
             console.warn(`Poll attempt ${attempt}: status ${pollResp.status}`);
             continue;
           }
