@@ -1069,8 +1069,10 @@ async function generatePresentation() {
         updateProgress(60 + Math.min(35, attempt * 1.5));
 
         try {
-          const pollResp = await fetch(`${POLL_PROXY}?id=${generationId}`, {
-            mode: 'cors'
+          const pollResp = await fetch(POLL_PROXY, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id: generationId })
           });
 
           if (!pollResp.ok) {
